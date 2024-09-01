@@ -22,6 +22,7 @@ const ChatbotTicketingSystem = () => {
   });
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimeSelect, setShowTimeSelect] = useState(false);
+  const [suggestedTimeSlots, setSuggestedTimeSlots] = useState([]);
 
   const steps = [
     { question: "Welcome to our museum! Would you like to book a ticket? (Yes/No)", field: null },
@@ -56,11 +57,23 @@ const ChatbotTicketingSystem = () => {
         },
         body: JSON.stringify(userData),
       });
+      
       if (response.ok) {
+        const data = await response.json();
         setMessages(prev => [
           ...prev,
           { type: 'bot', content: `Great! I've booked ${userData.ticketCount} ticket(s) for you on ${format(userData.preferredDate, 'MMMM d, yyyy')} during the ${userData.preferredTimeSlot} slot. Your total is $${userData.ticketCount * 50}. Would you like to proceed to payment? (Yes/No)` }
         ]);
+      } else if (response.status === 409) {
+        const data = await response.json();
+        setSuggestedTimeSlots(data.suggestedSlots);
+        setMessages(prev => [
+          ...prev,
+          { type: 'bot', content: `I apologize, but the selected time slot is full. Would you like to choose from the following available slots?` },
+          ...data.suggestedSlots.map(slot => ({ type: 'bot', content: `${slot.slot} (${slot.remainingCapacity} spots available)` })),
+          { type: 'bot', content: `Please type the slot you'd like to book, or 'No' to cancel.` }
+        ]);
+        setCurrentStep(steps.length - 1); // Go back to time slot selection
       } else {
         setMessages(prev => [...prev, { type: 'bot', content: "I apologize, but there was an issue booking your ticket. Can you please try again?" }]);
       }
@@ -90,7 +103,17 @@ const ChatbotTicketingSystem = () => {
         setCurrentStep(prev => prev + 1);
       }
     } else if (currentStep === steps.length) {
-      if (input.toLowerCase() === 'yes') {
+      if (suggestedTimeSlots.length > 0) {
+        const selectedSlot = suggestedTimeSlots.find(slot => slot.slot.toLowerCase() === input.toLowerCase());
+        if (selectedSlot) {
+          setUserData(prev => ({ ...prev, preferredTimeSlot: selectedSlot.slot }));
+          handleBookingConfirmation();
+        } else if (input.toLowerCase() === 'no') {
+          setMessages(prev => [...prev, { type: 'bot', content: "I understand. Your booking has been cancelled. Is there anything else I can help you with?" }]);
+        } else {
+          setMessages(prev => [...prev, { type: 'bot', content: "I'm sorry, I didn't understand that. Please select one of the suggested time slots or type 'No' to cancel." }]);
+        }
+      } else if (input.toLowerCase() === 'yes') {
         setMessages(prev => [...prev, { type: 'bot', content: "Great! I'll now guide you through our secure payment gateway." }]);
         // Here you would integrate with your payment gateway
         setTimeout(() => {
