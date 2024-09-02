@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format, parseISO, isValid } from 'date-fns';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminPage() {
   const [bookings, setBookings] = useState([]);
@@ -9,13 +21,14 @@ export default function AdminPage() {
     address: '',
     preferredDate: '',
     preferredTimeSlot: '',
-    ticketCount: 1
+    ticketCount: 1,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
   const [filterDate, setFilterDate] = useState('');
   const [filterTimeSlot, setFilterTimeSlot] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -54,7 +67,7 @@ export default function AdminPage() {
       const response = await fetch('/api/createBooking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBooking)
+        body: JSON.stringify(newBooking),
       });
       if (response.ok) {
         await fetchBookings(); // Refresh the bookings list after creation
@@ -63,7 +76,7 @@ export default function AdminPage() {
           address: '',
           preferredDate: '',
           preferredTimeSlot: '',
-          ticketCount: 1
+          ticketCount: 1,
         });
       } else {
         console.error('Failed to create booking');
@@ -131,22 +144,20 @@ export default function AdminPage() {
     let filteredData = data;
 
     if (searchTerm) {
-      filteredData = filteredData.filter(booking =>
+      filteredData = filteredData.filter((booking) =>
         booking.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.address.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (filterDate) {
-      filteredData = filteredData.filter(booking =>
-        format(parseISO(booking.preferredDate), 'yyyy-MM-dd') === filterDate
+      filteredData = filteredData.filter(
+        (booking) => format(parseISO(booking.preferredDate), 'yyyy-MM-dd') === filterDate
       );
     }
 
     if (filterTimeSlot) {
-      filteredData = filteredData.filter(booking =>
-        booking.preferredTimeSlot === filterTimeSlot
-      );
+      filteredData = filteredData.filter((booking) => booking.preferredTimeSlot === filterTimeSlot);
     }
 
     if (sortField) {
@@ -165,167 +176,203 @@ export default function AdminPage() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold mb-6">Booking Analytics Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Bookings per Day</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={getBookingsPerDay()}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Bookings per Time Slot</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={getBookingsPerTimeSlot()}
-                dataKey="count"
-                nameKey="slot"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                fill="#8884d8"
-                label
-              >
-                {getBookingsPerTimeSlot().map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+    <div className={`p-4 space-y-2 mx-10 ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-3xl font-bold">Booking Analytics Dashboard</h1>
+        <Button onClick={() => setDarkMode(!darkMode)}>
+          {darkMode ? 'Light Mode' : 'Dark Mode'}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-2">Total Bookings</h2>
-          <p className="text-4xl font-bold text-blue-600">{bookings.length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-2">Total Tickets</h2>
-          <p className="text-4xl font-bold text-green-600">{getTotalTickets()}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-2">Average Tickets per Booking</h2>
-          <p className="text-4xl font-bold text-purple-600">
-            {(getTotalTickets() / bookings.length).toFixed(2)}
-          </p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bookings per Day</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={getBookingsPerDay()}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="count" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Bookings per Time Slot</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={getBookingsPerTimeSlot()}
+                  dataKey="count"
+                  nameKey="slot"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  fill="#8884d8"
+                  label
+                >
+                  {getBookingsPerTimeSlot().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
 
-      <h2 className="text-2xl font-bold mb-4">Create New Booking</h2>
-      <form onSubmit={createBooking} className="mb-4">
-        <input
-          type="text"
-          placeholder="Name"
-          value={newBooking.name}
-          onChange={(e) => setNewBooking({...newBooking, name: e.target.value})}
-          className="border p-2 mr-2"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Address"
-          value={newBooking.address}
-          onChange={(e) => setNewBooking({...newBooking, address: e.target.value})}
-          className="border p-2 mr-2"
-          required
-        />
-        <input
-          type="date"
-          value={newBooking.preferredDate}
-          onChange={(e) => setNewBooking({...newBooking, preferredDate: e.target.value})}
-          className="border p-2 mr-2"
-          required
-        />
-        <select
-          value={newBooking.preferredTimeSlot}
-          onChange={(e) => setNewBooking({...newBooking, preferredTimeSlot: e.target.value})}
-          className="border p-2 mr-2"
-          required
-        >
-          <option value="">Select time slot</option>
-          <option value="Morning (9AM - 12PM)">Morning (9AM - 12PM)</option>
-          <option value="Afternoon (12PM - 4PM)">Afternoon (12PM - 4PM)</option>
-          <option value="Evening (4PM - 8PM)">Evening (4PM - 8PM)</option>
-        </select>
-        <input
-          type="number"
-          placeholder="Ticket Count"
-          value={newBooking.ticketCount}
-          onChange={(e) => setNewBooking({...newBooking, ticketCount: parseInt(e.target.value)})}
-          className="border p-2 mr-2"
-          required
-        />
-        <button type="submit" className="bg-blue-500 text-white p-2 rounded">Create Booking</button>
-      </form>
-
-      <h2 className="text-2xl font-bold my-4">Booking List</h2>
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by name or address"
-          value={searchTerm}
-          onChange={handleSearch}
-          className="border p-2 mr-2"
-        />
-        <input
-          type="date"
-          value={filterDate}
-          onChange={handleFilterDate}
-          className="border p-2 mr-2"
-        />
-        <select
-          value={filterTimeSlot}
-          onChange={handleFilterTimeSlot}
-          className="border p-2 mr-2"
-        >
-          <option value="">Filter by time slot</option>
-          <option value="Morning (9AM - 12PM)">Morning (9AM - 12PM)</option>
-          <option value="Afternoon (12PM - 4PM)">Afternoon (12PM - 4PM)</option>
-          <option value="Evening (4PM - 8PM)">Evening (4PM - 8PM)</option>
-        </select>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Bookings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-blue-600">{bookings.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Tickets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{getTotalTickets()}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Average Tickets per Booking</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-purple-600">
+              {(getTotalTickets() / bookings.length).toFixed(2)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
-      <table className="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 p-2 cursor-pointer" onClick={() => handleSort('name')}>Name</th>
-            <th className="border border-gray-300 p-2 cursor-pointer" onClick={() => handleSort('address')}>Address</th>
-            <th className="border border-gray-300 p-2 cursor-pointer" onClick={() => handleSort('preferredDate')}>Preferred Date</th>
-            <th className="border border-gray-300 p-2 cursor-pointer" onClick={() => handleSort('preferredTimeSlot')}>Preferred Time Slot</th>
-            <th className="border border-gray-300 p-2 cursor-pointer" onClick={() => handleSort('ticketCount')}>Ticket Count</th>
-            <th className="border border-gray-300 p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredAndSortedBookings.map((booking) => (
-            <tr key={booking._id}>
-              <td className="border border-gray-300 p-2">{booking.name}</td>
-              <td className="border border-gray-300 p-2">{booking.address}</td>
-              <td className="border border-gray-300 p-2">
-                {format(parseISO(booking.preferredDate), 'yyyy-MM-dd')}
-              </td>
-              <td className="border border-gray-300 p-2">{booking.preferredTimeSlot}</td>
-              <td className="border border-gray-300 p-2">{booking.ticketCount}</td>
-              <td className="border border-gray-300 p-2">
-                <button onClick={() => deleteBooking(booking._id)} className="bg-red-500 text-white p-2 rounded">Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Booking</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={createBooking} className="flex flex-col space-y-2">
+            <Input
+              type="text"
+              placeholder="Name"
+              value={newBooking.name}
+              onChange={(e) => setNewBooking({ ...newBooking, name: e.target.value })}
+              required
+            />
+            <Input
+              type="text"
+              placeholder="Address"
+              value={newBooking.address}
+              onChange={(e) => setNewBooking({ ...newBooking, address: e.target.value })}
+              required
+            />
+            <Input
+              type="date"
+              placeholder="Preferred Date"
+              value={newBooking.preferredDate}
+              onChange={(e) => setNewBooking({ ...newBooking, preferredDate: e.target.value })}
+              required
+            />
+            <Select
+              value={newBooking.preferredTimeSlot}
+              onChange={(e) => setNewBooking({ ...newBooking, preferredTimeSlot: e.target.value })}
+              required
+            >
+              <SelectContent>
+                <SelectItem value="placeholder">Select a time slot</SelectItem>
+                <SelectItem value="morning">Morning</SelectItem>
+                <SelectItem value="afternoon">Afternoon</SelectItem>
+                <SelectItem value="evening">Evening</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="number"
+              placeholder="Ticket Count"
+              value={newBooking.ticketCount}
+              onChange={(e) => setNewBooking({ ...newBooking, ticketCount: Number(e.target.value) })}
+              min="1"
+              required
+            />
+            <Button type="submit">Create Booking</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bookings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-2 flex justify-between items-center">
+            <Input
+              type="text"
+              placeholder="Search by name or address"
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+            <div className="flex space-x-2">
+              <Input
+                type="date"
+                placeholder="Filter by Date"
+                value={filterDate}
+                onChange={handleFilterDate}
+              />
+              <Select value={filterTimeSlot} onChange={handleFilterTimeSlot}>
+                <SelectContent>
+                  <SelectItem value="placeholder">Filter by Time Slot</SelectItem>
+                  <SelectItem value="morning">Morning</SelectItem>
+                  <SelectItem value="afternoon">Afternoon</SelectItem>
+                  <SelectItem value="evening">Evening</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead onClick={() => handleSort('name')}>Name</TableHead>
+                <TableHead onClick={() => handleSort('address')}>Address</TableHead>
+                <TableHead onClick={() => handleSort('preferredDate')}>Preferred Date</TableHead>
+                <TableHead onClick={() => handleSort('preferredTimeSlot')}>Time Slot</TableHead>
+                <TableHead onClick={() => handleSort('ticketCount')}>Tickets</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSortedBookings.map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell>{booking.name}</TableCell>
+                  <TableCell>{booking.address}</TableCell>
+                  <TableCell>{format(parseISO(booking.preferredDate), 'yyyy-MM-dd')}</TableCell>
+                  <TableCell>{booking.preferredTimeSlot}</TableCell>
+                  <TableCell>{booking.ticketCount}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" onClick={() => deleteBooking(booking.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
